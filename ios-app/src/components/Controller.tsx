@@ -14,6 +14,7 @@ import Sound from 'react-native-sound';
 import RNFS from 'react-native-fs';
 import RecordMessage from './RecordMessage';
 import Title from './Title';
+import { API_ENDPOINTS } from '../config';
 
 type Message = {
   sender: string;
@@ -47,7 +48,7 @@ function Controller() {
 
       // Send to backend API
       const response = await axios.post(
-        'http://localhost:8000/post-audio',
+        API_ENDPOINTS.POST_AUDIO,
         formData,
         {
           headers: {

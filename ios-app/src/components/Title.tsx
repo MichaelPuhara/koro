@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../config';
 
 type Props = {
   setMessages: React.Dispatch<React.SetStateAction<any[]>>;
@@ -21,7 +22,7 @@ function Title({ setMessages }: Props) {
     setIsResetting(true);
 
     try {
-      const response = await axios.get('http://localhost:8000/reset');
+      const response = await axios.get(API_ENDPOINTS.RESET);
       if (response.status === 200) {
         setMessages([]);
         Alert.alert('Success', 'Conversation reset successful!');
