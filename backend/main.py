@@ -6,7 +6,6 @@ from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from decouple import config
-import openai
 
 # Custom Functions Import
 from functions.database import store_messages, reset_messages
@@ -24,6 +23,8 @@ origins = [
     "http://localhost:4173",
     "http://localhost:4174",
     "http://localhost:3000",
+    "http://192.168.68.50:8081",  # iOS Simulator Metro bundler
+    "*",  # Allow all origins for development
 ]
 
 # CORS - Middleware
@@ -49,54 +50,66 @@ async def reset_conversation():
 # Get audio
 @app.post("/post-audio")
 async def post_audio(file: UploadFile = File(...)):
+    try:
+        print(f"Received file: {file.filename}, content_type: {file.content_type}")
 
+        # Save file from Frontend
+        file_path = f"temp_{file.filename}"
+        with open(file_path, "wb") as buffer:
+            content = await file.read()
+            buffer.write(content)
 
-    # Get saved audio
-    #audio_input = open("voice.mp3", "rb")
+        print(f"File saved to: {file_path}, size: {len(content)} bytes")
 
-    # Save file from Frontend
-    with open(file.filename, "wb") as buffer:
-        buffer.write(file.file.read())
-        audio_input = open(file.filename, "rb")
+        # Open the saved file for processing
+        with open(file_path, "rb") as audio_input:
+            # Decode Audio using Whisper
+            print("Calling Whisper API for transcription...")
+            message_decoded = convert_audio_to_text(audio_input)
 
-    # Decode Audio
-    message_decoded = convert_audio_to_text(audio_input)
+        if not message_decoded:
+            print("Failed to transcribe audio")
+            raise HTTPException(status_code=400, detail="Failed to transcribe audio")
 
-    if not message_decoded:
-        return HTTPException(status_code=400, detail="Failed to get Eleven Labs audio response")
-    
-    # Get ChatGPT response
-    chat_response = get_chat_response(message_decoded)
+        print(f"Transcribed message: {message_decoded}")
 
-     # Guard: Ensure message decoded
+        # Get ChatGPT response
+        print("Getting ChatGPT response...")
+        chat_response = get_chat_response(message_decoded)
 
-    if not chat_response:
-        return HTTPException(status_code=400, detail="Failed to get chat response")
+        if not chat_response:
+            print("Failed to get chat response")
+            raise HTTPException(status_code=400, detail="Failed to get chat response")
 
-    # Store messages
-    store_messages(message_decoded, chat_response)
+        print(f"ChatGPT response: {chat_response}")
 
-    # Convert chat response to audio
-    audio_output = convert_text_to_speech(chat_response)
+        # Store messages
+        store_messages(message_decoded, chat_response)
 
-    # Guard: Ensure message decoded
+        # Convert chat response to audio
+        print("Converting response to speech...")
+        audio_output = convert_text_to_speech(chat_response)
 
-    if not audio_output:
-        return HTTPException(status_code=400, detail="Failed to get Eleven Labs audio response")
-    
-     # Create a generator that yields chunks of data
-    def iterfile():
-        yield audio_output
+        if not audio_output:
+            print("Failed to convert text to speech")
+            raise HTTPException(status_code=400, detail="Failed to convert text to speech")
 
-            # Return audio file in chunks
-    def iterfile():
-        yield audio_output
+        print("Successfully generated audio response")
 
-    return StreamingResponse(iterfile(), media_type="application/octet-stream")
+        # Create a generator that yields chunks of data
+        def iterfile():
+            yield audio_output
 
+        # Return audio file
+        return StreamingResponse(iterfile(), media_type="application/octet-stream")
 
-
-    #return "Done"
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        print(f"Error processing audio: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
     
 
 

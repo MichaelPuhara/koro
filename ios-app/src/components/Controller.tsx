@@ -34,17 +34,17 @@ function Controller() {
       const myMessage: Message = { sender: 'me', audioPath: filePath };
       const messagesArr = [...messages, myMessage];
 
-      // Read the file as base64
-      const audioData = await RNFS.readFile(filePath, 'base64');
-      const audioBlob = `data:audio/m4a;base64,${audioData}`;
+      console.log('Recording file path:', filePath);
 
-      // Create FormData
+      // Create FormData - use the correct filename that backend expects
       const formData = new FormData();
       formData.append('file', {
-        uri: Platform.OS === 'ios' ? filePath : `file://${filePath}`,
+        uri: filePath,
         type: 'audio/m4a',
-        name: 'recording.m4a',
+        name: 'audio.m4a',
       } as any);
+
+      console.log('Sending to:', API_ENDPOINTS.POST_AUDIO);
 
       // Send to backend API
       const response = await axios.post(
@@ -55,12 +55,26 @@ function Controller() {
             'Content-Type': 'multipart/form-data',
           },
           responseType: 'arraybuffer',
+          timeout: 60000, // 60 second timeout for AI processing
         },
       );
 
+      console.log('Response received, status:', response.status);
+
       // Save response audio to file
       const responseAudioPath = `${RNFS.DocumentDirectoryPath}/response_${Date.now()}.mp3`;
-      await RNFS.writeFile(responseAudioPath, response.data, 'base64');
+
+      // Convert arraybuffer to base64 string for saving
+      let binary = '';
+      const bytes = new Uint8Array(response.data);
+      const len = bytes.byteLength;
+      for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      const base64Audio = btoa(binary);
+
+      await RNFS.writeFile(responseAudioPath, base64Audio, 'base64');
+      console.log('Response audio saved to:', responseAudioPath);
 
       // Add AI response to messages
       const aiMessage: Message = {
@@ -75,7 +89,19 @@ function Controller() {
       setIsLoading(false);
     } catch (error: any) {
       console.error('Error processing audio:', error);
-      Alert.alert('Error', 'Failed to process your message. Please try again.');
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+
+      let errorMessage = 'Failed to process your message.';
+      if (error.response?.status === 400) {
+        errorMessage = 'Audio format not supported. Please try again.';
+      } else if (error.code === 'ECONNABORTED') {
+        errorMessage = 'Request timed out. Please try again.';
+      } else if (error.message.includes('Network Error')) {
+        errorMessage = 'Cannot connect to server. Check backend is running.';
+      }
+
+      Alert.alert('Error', errorMessage);
       setIsLoading(false);
     }
   };
