@@ -64,14 +64,9 @@ function Controller() {
       // Save response audio to file
       const responseAudioPath = `${RNFS.DocumentDirectoryPath}/response_${Date.now()}.mp3`;
 
-      // Convert arraybuffer to base64 string for saving
-      let binary = '';
-      const bytes = new Uint8Array(response.data);
-      const len = bytes.byteLength;
-      for (let i = 0; i < len; i++) {
-        binary += String.fromCharCode(bytes[i]);
-      }
-      const base64Audio = btoa(binary);
+      // Convert arraybuffer to base64 using React Native's Buffer
+      const arrayBuffer = response.data;
+      const base64Audio = Buffer.from(arrayBuffer).toString('base64');
 
       await RNFS.writeFile(responseAudioPath, base64Audio, 'base64');
       console.log('Response audio saved to:', responseAudioPath);
