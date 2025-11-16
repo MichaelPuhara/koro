@@ -5,7 +5,7 @@ import { Platform } from 'react-native';
 // Common local IP addresses: 192.168.1.x, 10.0.0.x, 172.16.x.x
 
 // CHANGE THIS to your Mac's local IP address when running on iOS Simulator
-const LOCAL_IP = '192.168.1.100'; // Replace with your actual IP
+const LOCAL_IP = '192.168.68.50'; // Your Mac's IP address
 
 // Use localhost for Android emulator, local IP for iOS Simulator
 const API_BASE_URL = Platform.select({
