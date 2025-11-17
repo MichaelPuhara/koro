@@ -61,8 +61,28 @@ async def post_audio(file: UploadFile = File(...)):
 
         print(f"File saved to: {file_path}, size: {len(content)} bytes")
 
-        # Open the saved file for processing
-        with open(file_path, "rb") as audio_input:
+        # Convert m4a to mp3 for Whisper compatibility
+        import subprocess
+        converted_path = file_path.replace('.m4a', '.mp3')
+
+        try:
+            # Use ffmpeg to convert (if available)
+            subprocess.run([
+                'ffmpeg', '-i', file_path,
+                '-acodec', 'libmp3lame',
+                '-ar', '16000',  # 16kHz sample rate for Whisper
+                '-y',  # Overwrite output file
+                converted_path
+            ], check=True, capture_output=True)
+            audio_file_to_use = converted_path
+            print(f"Converted audio to: {converted_path}")
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            # If ffmpeg not available or conversion fails, try with original file
+            print("FFmpeg conversion failed or not available, using original file")
+            audio_file_to_use = file_path
+
+        # Open the audio file for processing
+        with open(audio_file_to_use, "rb") as audio_input:
             # Decode Audio using Whisper
             print("Calling Whisper API for transcription...")
             message_decoded = convert_audio_to_text(audio_input)
