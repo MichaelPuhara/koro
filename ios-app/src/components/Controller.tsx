@@ -37,12 +37,13 @@ function Controller() {
 
       console.log('Recording file path:', filePath);
 
-      // Create FormData - use the correct filename that backend expects
+      // Create FormData - detect file type from path
       const formData = new FormData();
+      const isWav = filePath.toLowerCase().includes('.wav');
       formData.append('file', {
         uri: filePath,
-        type: 'audio/wav',
-        name: 'audio.wav',
+        type: isWav ? 'audio/wav' : 'audio/m4a',
+        name: isWav ? 'audio.wav' : 'audio.m4a',
       } as any);
 
       console.log('Sending to:', API_ENDPOINTS.POST_AUDIO);
