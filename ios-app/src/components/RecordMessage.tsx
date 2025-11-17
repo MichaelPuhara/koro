@@ -52,11 +52,19 @@ function RecordMessage({ handleStop }: Props) {
 
     try {
       const path = Platform.select({
-        ios: 'recording.m4a',
-        android: 'sdcard/recording.mp4',
+        ios: 'recording.wav',
+        android: 'sdcard/recording.wav',
       });
 
-      const uri = await audioRecorderPlayer.startRecorder(path);
+      const audioSet = {
+        AudioEncoderAndroid: 'aac',
+        AudioSourceAndroid: 'mic',
+        AVEncoderAudioQualityKeyIOS: 'high',
+        AVNumberOfChannelsKeyIOS: 1,
+        AVFormatIDKeyIOS: 'lpcm', // Linear PCM for WAV format
+      };
+
+      const uri = await audioRecorderPlayer.startRecorder(path, audioSet);
       setRecordingPath(uri);
       setIsRecording(true);
       console.log('Recording started:', uri);

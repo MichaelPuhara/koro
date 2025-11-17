@@ -40,8 +40,8 @@ function Controller() {
       const formData = new FormData();
       formData.append('file', {
         uri: filePath,
-        type: 'audio/m4a',
-        name: 'audio.m4a',
+        type: 'audio/wav',
+        name: 'audio.wav',
       } as any);
 
       console.log('Sending to:', API_ENDPOINTS.POST_AUDIO);
