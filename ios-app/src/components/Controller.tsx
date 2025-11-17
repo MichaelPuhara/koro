@@ -12,6 +12,7 @@ import {
 import axios from 'axios';
 import Sound from 'react-native-sound';
 import RNFS from 'react-native-fs';
+import { Buffer } from 'buffer';
 import RecordMessage from './RecordMessage';
 import Title from './Title';
 import { API_ENDPOINTS } from '../config';
