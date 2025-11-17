@@ -12,7 +12,6 @@ import {
 import axios from 'axios';
 import Sound from 'react-native-sound';
 import RNFS from 'react-native-fs';
-import { Buffer } from 'buffer';
 import RecordMessage from './RecordMessage';
 import Title from './Title';
 import { API_ENDPOINTS } from '../config';
@@ -66,11 +65,25 @@ function Controller() {
       // Save response audio to file
       const responseAudioPath = `${RNFS.DocumentDirectoryPath}/response_${Date.now()}.mp3`;
 
-      // Convert arraybuffer to base64 using React Native's Buffer
-      const arrayBuffer = response.data;
-      const base64Audio = Buffer.from(arrayBuffer).toString('base64');
+      // Convert ArrayBuffer to base64 - pure JS implementation
+      const bytes = new Uint8Array(response.data);
+      const base64Chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+      let base64 = '';
 
-      await RNFS.writeFile(responseAudioPath, base64Audio, 'base64');
+      for (let i = 0; i < bytes.length; i += 3) {
+        const a = bytes[i];
+        const b = bytes[i + 1] || 0;
+        const c = bytes[i + 2] || 0;
+
+        const bitmap = (a << 16) | (b << 8) | c;
+
+        base64 += base64Chars[(bitmap >> 18) & 63];
+        base64 += base64Chars[(bitmap >> 12) & 63];
+        base64 += i + 1 < bytes.length ? base64Chars[(bitmap >> 6) & 63] : '=';
+        base64 += i + 2 < bytes.length ? base64Chars[bitmap & 63] : '=';
+      }
+
+      await RNFS.writeFile(responseAudioPath, base64, 'base64');
       console.log('Response audio saved to:', responseAudioPath);
 
       // Add AI response to messages
