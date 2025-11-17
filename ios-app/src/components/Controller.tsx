@@ -108,13 +108,19 @@ function Controller() {
       currentlyPlaying.release();
     }
 
-    const sound = new Sound(audioPath, '', (error) => {
+    console.log('Attempting to play audio from:', audioPath);
+
+    // Extract filename from full path for react-native-sound
+    const filename = audioPath.split('/').pop() || audioPath;
+
+    const sound = new Sound(filename, Sound.DOCUMENT, (error) => {
       if (error) {
         console.error('Failed to load sound', error);
-        Alert.alert('Error', 'Failed to play audio');
+        Alert.alert('Error', 'Failed to play audio response');
         return;
       }
 
+      console.log('Sound loaded successfully, playing...');
       sound.play((success) => {
         if (success) {
           console.log('Successfully finished playing');
