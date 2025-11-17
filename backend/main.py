@@ -67,18 +67,23 @@ async def post_audio(file: UploadFile = File(...)):
 
         try:
             # Use ffmpeg to convert (if available)
-            subprocess.run([
+            result = subprocess.run([
                 'ffmpeg', '-i', file_path,
                 '-acodec', 'libmp3lame',
                 '-ar', '16000',  # 16kHz sample rate for Whisper
                 '-y',  # Overwrite output file
                 converted_path
-            ], check=True, capture_output=True)
+            ], check=True, capture_output=True, text=True)
             audio_file_to_use = converted_path
             print(f"Converted audio to: {converted_path}")
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            # If ffmpeg not available or conversion fails, try with original file
-            print("FFmpeg conversion failed or not available, using original file")
+        except FileNotFoundError as e:
+            print(f"FFmpeg not found: {e}")
+            print("Please install ffmpeg: brew install ffmpeg")
+            audio_file_to_use = file_path
+        except subprocess.CalledProcessError as e:
+            print(f"FFmpeg conversion failed: {e}")
+            print(f"FFmpeg stderr: {e.stderr}")
+            print(f"FFmpeg stdout: {e.stdout}")
             audio_file_to_use = file_path
 
         # Open the audio file for processing
